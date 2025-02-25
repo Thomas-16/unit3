@@ -15,45 +15,6 @@ color[] colors = {
   #CAF0F8
 };
 
-class CircleButton {
-  Runnable onClick; // onClick callback
-  int x, y;
-  int diameter;
-  color buttonColor;
-  color outlineColor;
-  color hoveringOutlineColor;
-  int outlineWidth;
-  color currentOutlineColor;
-  
-  CircleButton(int x, int y, int diameter, color buttonColor, color outlineColor, color hoveringOutlineColor, int outlineWidth) {
-    this.x = x;
-    this.y = y;
-    this.diameter = diameter;
-    this.buttonColor = buttonColor;
-    this.outlineColor = outlineColor;
-    this.hoveringOutlineColor = hoveringOutlineColor;
-    this.outlineWidth = outlineWidth;
-  }
-  
-  void draw() {
-    currentOutlineColor = outlineColor;
-    stroke(currentOutlineColor);
-    strokeWeight(outlineWidth);
-    fill(buttonColor);
-    circle(x, y, diameter);
-  }
-  
-  void setOnClick(Runnable onClick) {
-    this.onClick = onClick;
-  }
-  void mouseReleased() {
-    if(onClick != null)
-      onClick.run();
-  }
-  
-  color getButtonColor() { return buttonColor; }
-}
-
 
 CircleButton circleButton1;
 color rectangleColor;
@@ -62,7 +23,7 @@ void setup() {
   size(1400, 900);
   frameRate(120);
   
-  circleButton1 = new CircleButton(300, 700, 70, colors[5], colors[0], colors[7], 4);
+  circleButton1 = new CircleButton(300, 700, 70, colors[5], colors[0], colors[6], colors[1], 4);
   circleButton1.setOnClick(() -> {
     rectangleColor = circleButton1.getButtonColor();
   });
@@ -84,4 +45,8 @@ void draw() {
 
 void mouseReleased() {
   circleButton1.mouseReleased();
+}
+
+float sqrMagnitude(int x1, int y1, int x2, int y2) {
+  return sq(x1 - x2) + sq(y1 - y2);
 }
