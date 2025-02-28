@@ -1,15 +1,15 @@
 
 class RectButton {
-  int x, y;
-  int w, h;
-  color buttonColor;
-  color outlineColor;
-  color hoveringOutlineColor;
-  color clickingButtonColor;
-  int outlineWidth;
+  private int x, y;
+  private int w, h;
+  private color buttonColor;
+  private color outlineColor;
+  private color hoveringOutlineColor;
+  private color clickingButtonColor;
+  private int outlineWidth;
   
-  Runnable onClick; // onClick callback
-  boolean isBeingPressed;
+  private Runnable onClick; // onClick callback
+  private boolean isBeingPressed;
   
   RectButton(int x, int y, int w, int h, color buttonColor, color outlineColor, color hoveringOutlineColor, color clickingButtonColor, int outlineWidth) {
     this.x = x;
@@ -23,7 +23,7 @@ class RectButton {
     this.outlineWidth = outlineWidth;
   }
   
-  void draw() {
+  public void draw() {
     color currentOutlineColor = isHoveredOver() ? hoveringOutlineColor : outlineColor;
     color currentButtonColor = isBeingPressed ? clickingButtonColor : buttonColor;
     
@@ -34,21 +34,21 @@ class RectButton {
     rect(x, y, w, h);
   }
   
-  void setOnClick(Runnable onClick) {
+  public void setOnClick(Runnable onClick) {
     this.onClick = onClick;
   }
-  void mouseReleased() {
+  public void mouseReleased() {
     isBeingPressed = false;
     if(onClick != null && isHoveredOver())
       onClick.run();
   }
-  void mousePressed() {
+  public void mousePressed() {
     if(isHoveredOver())
       isBeingPressed = true;
   }
-  boolean isHoveredOver() {
+  private boolean isHoveredOver() {
     return mouseX < x + w/2 + outlineWidth/2 && mouseX > x - w/2 - outlineWidth/2 && mouseY < y + h/2 + outlineWidth/2 && mouseY > y - h/2 - outlineWidth/2;
   }
   
-  color getButtonColor() { return buttonColor; }
+  public  color getButtonColor() { return buttonColor; }
 }
