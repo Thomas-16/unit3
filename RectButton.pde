@@ -1,5 +1,6 @@
 
 class RectButton {
+  PGraphics pGraphics;
   private int x, y;
   private int w, h;
   private color buttonColor;
@@ -7,11 +8,15 @@ class RectButton {
   private color hoveringOutlineColor;
   private color clickingButtonColor;
   private int outlineWidth;
+  private int roundness;
+  
+  private int buttonNum;
   
   private Runnable onClick; // onClick callback
   private boolean isBeingPressed;
   
-  RectButton(int x, int y, int w, int h, color buttonColor, color outlineColor, color hoveringOutlineColor, color clickingButtonColor, int outlineWidth) {
+  RectButton(PGraphics pGraphics, int x, int y, int w, int h, color buttonColor, color outlineColor, color hoveringOutlineColor, color clickingButtonColor, int outlineWidth, int roundness) {
+    this.pGraphics = pGraphics;
     this.x = x;
     this.y = y;
     this.w = w;
@@ -21,18 +26,27 @@ class RectButton {
     this.hoveringOutlineColor = hoveringOutlineColor;
     this.clickingButtonColor = clickingButtonColor;
     this.outlineWidth = outlineWidth;
+    this.roundness = roundness;
   }
   
   public void draw() {
     color currentOutlineColor = isHoveredOver() ? hoveringOutlineColor : outlineColor;
-    color currentButtonColor = isBeingPressed ? clickingButtonColor : buttonColor;
+    color currentButtonColor = isBeingPressed ? lerpColor(clickingButtonColor, buttonColor, 0.4) : buttonColor;
     
-    stroke(currentOutlineColor);
-    strokeWeight(outlineWidth);
-    fill(currentButtonColor);
-    rectMode(CENTER);
-    rect(x, y, w, h);
+    pGraphics.beginDraw();
+    pGraphics.stroke(currentOutlineColor);
+    pGraphics.strokeWeight(outlineWidth);
+    pGraphics.fill(currentButtonColor);
+    pGraphics.rectMode(CENTER);
+    pGraphics.rect(x, y, w, h, roundness);
+    pGraphics.endDraw();
   }
+  
+  public void setOutlineColor(color outlineColor) {
+    this.outlineColor = outlineColor;
+  }
+  public void setButtonNum(int buttonNum) { this.buttonNum = buttonNum; }
+  public int getButtonNum() { return this.buttonNum; }
   
   public void setOnClick(Runnable onClick) {
     this.onClick = onClick;
