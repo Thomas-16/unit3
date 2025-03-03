@@ -5,20 +5,22 @@
 
 
 // TODOS:
-// PEN CURSOR, ERASER CURSOR
-// SIZE SELECTION
 // FIX CLICKING TOGGLE BUTTON DRAWS DOT BUG
 // AN INDICATOR SHOWING CURRENT COLOR AND THICKNESS
 // STAMP TOOL
 
 PGraphics panelPG;
 PGraphics paintPG;
+PGraphics strokeSizeIndicatorPG;
 
 int canvasStart = 190;
 boolean isPanelOpen = true;
 color currentStrokeColor = color(0);
 int selectedButton = 0; // 0-11 = color buttons, 12 = eraser, 13 = stamp tool
 color selectedButtonOutlineColor = color(255, 251, 3);
+int MIN_STROKE_SIZE = 2;
+int MAX_STROKE_SIZE = 20;
+float currentStrokeSize;
 
 float panelY = 0;
 int targetPanelY = 0;
@@ -35,6 +37,10 @@ boolean isTogglePanelButtonBeingPressed = false;
 CircleButton[] colorButtons;
 RectButton eraserButton;
 PImage eraserImg;
+Slider sizeSlider;
+
+float timeLastChangedStrokeSize;
+
 
 void setup() {
   size(1400, 900);
@@ -57,12 +63,14 @@ void setup() {
   
   panelPG = createGraphics(width, canvasStart);
   
+  strokeSizeIndicatorPG = createGraphics(MAX_STROKE_SIZE + 2, MAX_STROKE_SIZE + 2);
+  
   // create color buttons
   colorButtons = new CircleButton[12];
   int currentX = 80;
   int currentY = 35;
   for(int i = 0; i < colorButtons.length; i++) {
-    colorButtons[i] = new CircleButton(panelPG, currentX, currentY, 30, lerpColor(color(#d8f3dc), color(#081c15), map(i, 0, colorButtons.length - 1, 0, 1)), color(0), color(100), color(100), 3);
+    colorButtons[i] = new CircleButton(panelPG, currentX, currentY, 30, lerpColor(color(#f6ff00), color(#f21800), map(i, 0, colorButtons.length - 1, 0, 1)), color(0), color(100), color(100), 3);
     colorButtons[i].setButtonNum(i);
     currentX += 40;
     if((i + 1) % 4 == 0) {
@@ -80,12 +88,19 @@ void setup() {
   }
   
   // create eraser button
-  eraserButton = new RectButton(panelPG, 300, 75, 80, 80, color(255), color(0), color(100), color(200), 4, 6);
+  eraserButton = new RectButton(panelPG, 290, 75, 60, 60, color(255), color(0), color(100), color(200), 4, 6);
   eraserButton.setOnClick(() -> {
     currentStrokeColor = color(255);
     selectButton(12);
   });
   
+  // create slider
+  sizeSlider = new Slider(panelPG, 370, 75, 200, 8, color(0), 20);
+  sizeSlider.setOnSliderValueChanged(() -> {
+    currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
+    timeLastChangedStrokeSize = millis();
+  });
+  currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
 }
 
 void draw() {
@@ -102,7 +117,6 @@ void draw() {
   // open/close panel button
   currentTogglePanelButtonOutlineColor = isHoveringOverTogglePanelButton() ?  color(100) : color(0);
   currentTogglePanelButtonColor = isTogglePanelButtonBeingPressed ? lerpColor(color(100), color(#ffbf47), 0.6) : color(#ffbf47);
-  
   panelPG.stroke(currentTogglePanelButtonOutlineColor);
   panelPG.strokeWeight(4);
   panelPG.fill(currentTogglePanelButtonColor);
@@ -132,8 +146,24 @@ void draw() {
   eraserButton.draw();
   panelPG.beginDraw();
   panelPG.imageMode(CENTER);
-  panelPG.image(eraserImg, 300, 75, 60, 60);
+  panelPG.image(eraserImg, 290, 75, 44, 44);
   panelPG.endDraw();
+  
+  // draw size slider
+  sizeSlider.draw();
+  
+  // draw stroke size indicator
+  if(millis() - timeLastChangedStrokeSize < 1000 && millis() > 1000) {
+    strokeSizeIndicatorPG.beginDraw();
+    strokeSizeIndicatorPG.clear();
+    strokeSizeIndicatorPG.stroke(currentStrokeColor);
+    strokeSizeIndicatorPG.strokeWeight(1);
+    strokeSizeIndicatorPG.fill(currentStrokeColor);
+    strokeSizeIndicatorPG.ellipseMode(CENTER);
+    strokeSizeIndicatorPG.ellipse(strokeSizeIndicatorPG.width / 2, strokeSizeIndicatorPG.height / 2, currentStrokeSize, currentStrokeSize);
+    strokeSizeIndicatorPG.endDraw();
+    image(strokeSizeIndicatorPG, width/2 - strokeSizeIndicatorPG.width / 2, height/2 - strokeSizeIndicatorPG.height / 2);
+  }
   
   panelY = lerp(panelY, targetPanelY, deltaTime * panelSpeed);
   image(panelPG, 0, panelY);
@@ -156,6 +186,10 @@ void selectButton(int buttonNum) {
 }
 
 void mouseDragged() {
+  if(isPanelOpen) {
+    sizeSlider.mouseDragged();
+  }
+  
   if(isPanelOpen && mouseY < canvasStart - 36) { return; }
     mouseDraw();
 }
@@ -165,6 +199,7 @@ void mouseReleased() {
       button.mouseReleased();
     }
     eraserButton.mouseReleased();
+    sizeSlider.mouseReleased();
   }
   
   if(isTogglePanelButtonBeingPressed)
@@ -188,7 +223,7 @@ void mousePressed() {
 }
 void mouseDraw() {
   paintPG.beginDraw();
-  paintPG.strokeWeight(5);
+  paintPG.strokeWeight(currentStrokeSize);
   paintPG.stroke(currentStrokeColor);
   paintPG.line(pmouseX, pmouseY, mouseX, mouseY);
   paintPG.endDraw();
