@@ -1,4 +1,5 @@
 class Slider {
+  PGraphics pGraphics;
   private int leftX;
   private int y;
   private int sliderLength;
@@ -10,7 +11,8 @@ class Slider {
   private float sliderX;
   
   
-  Slider(int leftX, int y, int sliderLength, int sliderThickness, color sliderColor, int circleSize) {
+  Slider(PGraphics pGraphics, int leftX, int y, int sliderLength, int sliderThickness, color sliderColor, int circleSize) {
+    this.pGraphics = pGraphics;
     this.leftX = leftX;
     this.y = y;
     this.sliderLength = sliderLength;
@@ -28,12 +30,14 @@ class Slider {
   }
   
   public void draw() {
-    stroke(sliderColor);
-    strokeWeight(sliderThickness);
-    line(leftX, y, leftX + sliderLength, y);
-    noStroke();
-    fill(sliderColor);
-    circle(sliderX, y, circleSize);
+    pGraphics.beginDraw();
+    pGraphics.stroke(sliderColor);
+    pGraphics.strokeWeight(sliderThickness);
+    pGraphics.line(leftX, y, leftX + sliderLength, y);
+    pGraphics.noStroke();
+    pGraphics.fill(sliderColor);
+    pGraphics.circle(sliderX, y, circleSize);
+    pGraphics.endDraw();
   }
   
   public void mouseDragged() {
