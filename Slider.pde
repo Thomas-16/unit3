@@ -6,12 +6,15 @@ class Slider {
   private int sliderThickness;
   private color sliderColor; 
   private int circleSize;
+  private int circleOutlineSize;
+  private color circleOutlineColor;
+  private color circleHoveringOutlineColor;
   
   private Runnable onSliderValueChanged;
   private float sliderX;
   
   
-  Slider(PGraphics pGraphics, int leftX, int y, int sliderLength, int sliderThickness, color sliderColor, int circleSize) {
+  Slider(PGraphics pGraphics, int leftX, int y, int sliderLength, int sliderThickness, color sliderColor, int circleSize, int circleOutlineSize, color circleOutlineColor, color circleHoveringOutlineColor) {
     this.pGraphics = pGraphics;
     this.leftX = leftX;
     this.y = y;
@@ -20,6 +23,9 @@ class Slider {
     this.sliderColor = sliderColor;
     this.circleSize = circleSize;
     this.sliderX = leftX + 0.1 * sliderLength;
+    this.circleOutlineSize = circleOutlineSize;
+    this.circleOutlineColor = circleOutlineColor;
+    this.circleHoveringOutlineColor = circleHoveringOutlineColor;
   }
   
   public void setOnSliderValueChanged(Runnable onSliderValueChanged) {
@@ -36,6 +42,10 @@ class Slider {
     pGraphics.line(leftX, y, leftX + sliderLength, y);
     pGraphics.noStroke();
     pGraphics.fill(sliderColor);
+    
+    color currentOutlineColor = isCircleHoveredOver() ? circleHoveringOutlineColor : circleOutlineColor;
+    pGraphics.stroke(currentOutlineColor);
+    pGraphics.strokeWeight(circleOutlineSize);
     pGraphics.circle(sliderX, y, circleSize);
     pGraphics.endDraw();
   }
@@ -51,5 +61,8 @@ class Slider {
       sliderX = constrain(mouseX, leftX, leftX + sliderLength);
       if(onSliderValueChanged != null) onSliderValueChanged.run();
     }
+  }
+  private boolean isCircleHoveredOver() {
+    return sqrMagnitude(int(sliderX), y, mouseX, mouseY) <= sq((circleSize / 2) + (circleOutlineSize / 2));
   }
 }
