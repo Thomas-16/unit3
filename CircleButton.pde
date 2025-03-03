@@ -1,19 +1,19 @@
 
 class CircleButton {
-  int x, y;
-  int diameter;
-  color buttonColor;
-  color outlineColor;
-  color hoveringOutlineColor;
-  color clickingButtonColor;
-  int outlineWidth;
-  color currentOutlineColor;
-  color currentButtonColor;
+  private PGraphics pGraphics;
+  private int x, y;
+  private int diameter;
+  private color buttonColor;
+  private color outlineColor;
+  private color hoveringOutlineColor;
+  private color clickingButtonColor;
+  private int outlineWidth;
   
-  Runnable onClick; // onClick callback
-  boolean isHoveredOver;
+  private Runnable onClick; // onClick callback
+  private boolean isBeingPressed;
   
-  CircleButton(int x, int y, int diameter, color buttonColor, color outlineColor, color hoveringOutlineColor, color clickingButtonColor, int outlineWidth) {
+  CircleButton(PGraphics pGraphics, int x, int y, int diameter, color buttonColor, color outlineColor, color hoveringOutlineColor, color clickingButtonColor, int outlineWidth) {
+    this.pGraphics = pGraphics;
     this.x = x;
     this.y = y;
     this.diameter = diameter;
@@ -24,26 +24,33 @@ class CircleButton {
     this.outlineWidth = outlineWidth;
   }
   
-  void draw() {
-    isHoveredOver = isHoveredOver();
+  public void draw() {
+    color currentOutlineColor = isHoveredOver() ? hoveringOutlineColor : outlineColor;
+    color currentButtonColor = isBeingPressed ? clickingButtonColor : buttonColor;
     
-    currentOutlineColor = isHoveredOver ? hoveringOutlineColor : outlineColor;
-    stroke(currentOutlineColor);
-    strokeWeight(outlineWidth);
-    fill(buttonColor);
-    circle(x, y, diameter);
+    pGraphics.beginDraw();
+    pGraphics.stroke(currentOutlineColor);
+    pGraphics.strokeWeight(outlineWidth);
+    pGraphics.fill(currentButtonColor);
+    pGraphics.circle(x, y, diameter);
+    pGraphics.endDraw();
   }
   
-  void setOnClick(Runnable onClick) {
+  public void setOnClick(Runnable onClick) {
     this.onClick = onClick;
   }
-  void mouseReleased() {
-    if(onClick != null)
+  public void mouseReleased() {
+    isBeingPressed = false;
+    if(onClick != null && isHoveredOver())
       onClick.run();
   }
-  boolean isHoveredOver() {
+  public void mousePressed() {
+    if(isHoveredOver())
+      isBeingPressed = true;
+  }
+  private boolean isHoveredOver() {
     return sqrMagnitude(x, y, mouseX, mouseY) <= sq((diameter / 2) + (outlineWidth / 2));
   }
   
-  color getButtonColor() { return buttonColor; }
+  public color getButtonColor() { return buttonColor; }
 }
