@@ -1,6 +1,6 @@
 
 class RectButton {
-  PGraphics pGraphics;
+  private PGraphics pGraphics;
   private int x, y;
   private int w, h;
   private color buttonColor;
