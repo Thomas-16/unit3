@@ -1,5 +1,5 @@
 class Slider {
-  PGraphics pGraphics;
+  private PGraphics pGraphics;
   private int leftX;
   private int y;
   private int sliderLength;
