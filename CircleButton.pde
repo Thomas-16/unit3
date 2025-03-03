@@ -9,6 +9,8 @@ class CircleButton {
   private color clickingButtonColor;
   private int outlineWidth;
   
+  private int buttonNum;
+  
   private Runnable onClick; // onClick callback
   private boolean isBeingPressed;
   
@@ -35,6 +37,12 @@ class CircleButton {
     pGraphics.circle(x, y, diameter);
     pGraphics.endDraw();
   }
+  
+  public void setOutlineColor(color outlineColor) {
+    this.outlineColor = outlineColor;
+  }
+  public void setButtonNum(int buttonNum) { this.buttonNum = buttonNum; }
+  public int getButtonNum() { return this.buttonNum; }
   
   public void setOnClick(Runnable onClick) {
     this.onClick = onClick;
