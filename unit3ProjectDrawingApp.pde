@@ -5,7 +5,6 @@
 
 
 // TODOS:
-// FIX CLICKING TOGGLE BUTTON DRAWS DOT BUG
 // AN INDICATOR SHOWING CURRENT COLOR AND THICKNESS
 // STAMP TOOL
 
@@ -41,6 +40,13 @@ Slider sizeSlider;
 
 float timeLastChangedStrokeSize;
 
+PFont font1;
+
+PVector previousSmoothed;
+float smoothingFactor = 0.0;
+boolean isDragging = false;
+Slider stabilizationSlider;
+
 
 void setup() {
   size(1400, 900);
@@ -49,6 +55,8 @@ void setup() {
   arrowDownImg = loadImage("arrow down.png");
   arrowUpImg = loadImage("arrow up.png");
   eraserImg = loadImage("eraser.png");
+  
+  font1 = createFont("Arial Bold", 35);
   
   // delta time calculation
   float currentMillis = millis();
@@ -94,13 +102,20 @@ void setup() {
     selectButton(12);
   });
   
-  // create slider
-  sizeSlider = new Slider(panelPG, 370, 75, 200, 8, color(0), 20);
+  // create stroke size slider
+  sizeSlider = new Slider(panelPG, 370, 75, 200, 8, color(0), 20, 3, color(0), color(100));
   sizeSlider.setOnSliderValueChanged(() -> {
     currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
     timeLastChangedStrokeSize = millis();
   });
   currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
+  
+  // Create stabilization slider
+  stabilizationSlider = new Slider(panelPG, 600, 75, 200, 8, color(0), 20, 3, color(0), color(100));
+  stabilizationSlider.setOnSliderValueChanged(() -> {
+    smoothingFactor = map(stabilizationSlider.getSliderValue(), 0, 1, 0.65, 0.92);
+  });
+  smoothingFactor = map(stabilizationSlider.getSliderValue(), 0, 1, 0.65, 0.92);
 }
 
 void draw() {
@@ -151,13 +166,26 @@ void draw() {
   
   // draw size slider
   sizeSlider.draw();
+  panelPG.beginDraw();
+  panelPG.textFont(font1);
+  panelPG.textSize(25);
+  panelPG.text("STROKE SIZE", 383, 115);
+  panelPG.endDraw();
+  
+  // draw stabilization slider
+  stabilizationSlider.draw();
+  panelPG.beginDraw();
+  panelPG.textFont(font1);
+  panelPG.textSize(25);
+  panelPG.text("STABILIZATION", 600, 115);
+  panelPG.endDraw();
   
   // draw stroke size indicator
   if(millis() - timeLastChangedStrokeSize < 1000 && millis() > 1000) {
     strokeSizeIndicatorPG.beginDraw();
     strokeSizeIndicatorPG.clear();
-    strokeSizeIndicatorPG.stroke(currentStrokeColor);
-    strokeSizeIndicatorPG.strokeWeight(1);
+    strokeSizeIndicatorPG.stroke(0);
+    strokeSizeIndicatorPG.strokeWeight(selectedButton == 12 ? 1 : 0);
     strokeSizeIndicatorPG.fill(currentStrokeColor);
     strokeSizeIndicatorPG.ellipseMode(CENTER);
     strokeSizeIndicatorPG.ellipse(strokeSizeIndicatorPG.width / 2, strokeSizeIndicatorPG.height / 2, currentStrokeSize, currentStrokeSize);
@@ -184,49 +212,75 @@ void selectButton(int buttonNum) {
     eraserButton.setOutlineColor(selectedButtonOutlineColor);
   }
 }
+void mousePressed() {
+  isDragging = false;
+  previousSmoothed = null; // Reset for new stroke
+  
+  if(isHoveringOverTogglePanelButton())
+    isTogglePanelButtonBeingPressed = true;
+
+  if (isPanelOpen && mouseY < canvasStart - 36) { return; }
+  mouseDraw();
+}
 
 void mouseDragged() {
-  if(isPanelOpen) {
+  isDragging = true;
+  
+  if (isPanelOpen) {
     sizeSlider.mouseDragged();
-  }
-  
-  if(isPanelOpen && mouseY < canvasStart - 36) { return; }
-    mouseDraw();
-}
-void mouseReleased() {
-  if(isPanelOpen) {
-    for(CircleButton button : colorButtons) {
-      button.mouseReleased();
-    }
-    eraserButton.mouseReleased();
-    sizeSlider.mouseReleased();
-  }
-  
-  if(isTogglePanelButtonBeingPressed)
-    togglePanel();
-  
-  isTogglePanelButtonBeingPressed = false;
-}
-void mousePressed() {
-  if(isPanelOpen) {
-    for(CircleButton button : colorButtons) {
-      button.mousePressed();
-    }
-    eraserButton.mousePressed();
+    stabilizationSlider.mouseDragged();
   }
   
   if(isHoveringOverTogglePanelButton())
     isTogglePanelButtonBeingPressed = true;
   
-  if(isPanelOpen && mouseY < canvasStart - 36) { return; }
-    mouseDraw();
+  if (isPanelOpen && mouseY < canvasStart - 36) { return; }
+  mouseDraw();
+}
+
+void mouseReleased() {
+  if (isPanelOpen) {
+    for (CircleButton button : colorButtons) {
+      button.mouseReleased();
+    }
+    eraserButton.mouseReleased();
+    sizeSlider.mouseReleased();
+    stabilizationSlider.mouseReleased();
+  }
+
+  // Handle single click (draw point if not dragged)
+  if (!isDragging && !(isPanelOpen && mouseY < canvasStart)) {
+    paintPG.beginDraw();
+    paintPG.strokeWeight(currentStrokeSize);
+    paintPG.stroke(currentStrokeColor);
+    paintPG.point(mouseX, mouseY);
+    paintPG.endDraw();
+  }
+
+  if (isTogglePanelButtonBeingPressed) togglePanel();
+  
+  isTogglePanelButtonBeingPressed = false;
 }
 void mouseDraw() {
+  PVector current = new PVector(mouseX, mouseY);
+
+  if (previousSmoothed == null) {
+    previousSmoothed = current.copy();
+    return;
+  }
+
+  // Calculate smoothed position
+  PVector smoothed = new PVector();
+  smoothed.x = previousSmoothed.x * smoothingFactor + current.x * (1 - smoothingFactor);
+  smoothed.y = previousSmoothed.y * smoothingFactor + current.y * (1 - smoothingFactor);
+
   paintPG.beginDraw();
   paintPG.strokeWeight(currentStrokeSize);
   paintPG.stroke(currentStrokeColor);
-  paintPG.line(pmouseX, pmouseY, mouseX, mouseY);
+  paintPG.line(previousSmoothed.x, previousSmoothed.y, smoothed.x, smoothed.y);
   paintPG.endDraw();
+
+  previousSmoothed.set(smoothed);
 }
 
 void togglePanel() {
