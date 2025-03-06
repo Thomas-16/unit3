@@ -6,15 +6,17 @@
 
 // TODOS:
 // COLOUR PICKER TOOL
-// STAMP TOOL
+// SHAPE TOOLS (LINE, RECTANGLE, CIRCLE, ELLIPSE)
+// NEW, SAVE, LOAD BUTTONS
 
 PGraphics panelPG;
 PGraphics paintPG;
 PGraphics strokeSizeIndicatorPG;
+PGraphics stampSizeIndicatorPG;
 
 int canvasStart = 190;
 boolean isPanelOpen = true;
-color currentStrokeColor = color(0);
+color currentStrokeColor = color(#f6ff00);
 int selectedButton = 0; // 0-11 = color buttons, 12 = eraser, 13 = stamp tool
 color selectedButtonOutlineColor = color(255, 251, 3);
 int MIN_STROKE_SIZE = 2;
@@ -49,6 +51,12 @@ Slider stabilizationSlider;
 
 RectButton stampButton;
 PImage stampImg;
+int MIN_STAMP_SIZE = 60;
+int MAX_STAMP_SIZE = 200;
+float currentStampSize = 100;
+
+RectButton colorPickerButton;
+PImage colorPickerButtonImg;
 
 
 void setup() {
@@ -76,6 +84,7 @@ void setup() {
   panelPG = createGraphics(width, canvasStart);
   
   strokeSizeIndicatorPG = createGraphics(MAX_STROKE_SIZE + 2, MAX_STROKE_SIZE + 2);
+  stampSizeIndicatorPG = createGraphics(MAX_STAMP_SIZE, MAX_STAMP_SIZE);
   
   // create color buttons
   colorButtons = new CircleButton[12];
@@ -110,6 +119,7 @@ void setup() {
   sizeSlider = new Slider(panelPG, 360, 75, 200, 8, color(0), 20, 3, color(0), color(100));
   sizeSlider.setOnSliderValueChanged(() -> {
     currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
+    currentStampSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STAMP_SIZE, MAX_STAMP_SIZE);
     timeLastChangedStrokeSize = millis();
   });
   currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
@@ -126,10 +136,12 @@ void setup() {
   stampButton.setOnClick(() -> {
     selectButton(13);
   });
+  
+  // create colour picker button
 }
 
 void draw() {
-  println(frameRate);
+  //println(frameRate);
   
   background(255);
   
@@ -190,17 +202,28 @@ void draw() {
   panelPG.text("STABILIZATION", 602, 115);
   panelPG.endDraw();
   
-  // draw stroke size indicator
+  // draw size indicators
   if(millis() - timeLastChangedStrokeSize < 1000 && millis() > 1000) {
-    strokeSizeIndicatorPG.beginDraw();
-    strokeSizeIndicatorPG.clear();
-    strokeSizeIndicatorPG.stroke(0);
-    strokeSizeIndicatorPG.strokeWeight(selectedButton == 12 ? 1 : 0);
-    strokeSizeIndicatorPG.fill(currentStrokeColor);
-    strokeSizeIndicatorPG.ellipseMode(CENTER);
-    strokeSizeIndicatorPG.ellipse(strokeSizeIndicatorPG.width / 2, strokeSizeIndicatorPG.height / 2, currentStrokeSize, currentStrokeSize);
-    strokeSizeIndicatorPG.endDraw();
-    image(strokeSizeIndicatorPG, width/2 - strokeSizeIndicatorPG.width / 2, height/2 - strokeSizeIndicatorPG.height / 2);
+    if(selectedButton == 13) {
+      stampSizeIndicatorPG.beginDraw();
+      stampSizeIndicatorPG.clear();
+      stampSizeIndicatorPG.noStroke();
+      stampSizeIndicatorPG.noFill();
+      stampSizeIndicatorPG.imageMode(CENTER);
+      stampSizeIndicatorPG.image(stampImg, MAX_STAMP_SIZE / 2, MAX_STAMP_SIZE / 2, currentStampSize, currentStampSize / 150.0 * 109.0);
+      stampSizeIndicatorPG.endDraw();
+      image(stampSizeIndicatorPG, width/2 - stampSizeIndicatorPG.width/2, height/2 - stampSizeIndicatorPG.height/2);
+    } else {
+      strokeSizeIndicatorPG.beginDraw();
+      strokeSizeIndicatorPG.clear();
+      strokeSizeIndicatorPG.stroke(0);
+      strokeSizeIndicatorPG.strokeWeight(selectedButton == 12 ? 1 : 0);
+      strokeSizeIndicatorPG.fill(currentStrokeColor);
+      strokeSizeIndicatorPG.ellipseMode(CENTER);
+      strokeSizeIndicatorPG.ellipse(strokeSizeIndicatorPG.width / 2, strokeSizeIndicatorPG.height / 2, currentStrokeSize, currentStrokeSize);
+      strokeSizeIndicatorPG.endDraw();
+      image(strokeSizeIndicatorPG, width/2 - strokeSizeIndicatorPG.width / 2, height/2 - strokeSizeIndicatorPG.height / 2);
+    }
   }
   
   // draw stamp button + image
@@ -249,7 +272,8 @@ void mousePressed() {
     stampButton.mousePressed();
   }
 
-  if (isPanelOpen && mouseY < canvasStart - 36) { return; }
+  if (isPanelOpen && mouseY < canvasStart) { return; }
+  if (!isPanelOpen && mouseY < 30) { return; }
   mouseDraw();
 }
 
@@ -264,7 +288,7 @@ void mouseDragged() {
   if(isHoveringOverTogglePanelButton())
     isTogglePanelButtonBeingPressed = true;
   
-  if (isPanelOpen && mouseY < canvasStart - 36) { return; }
+  if (isPanelOpen && mouseY < canvasStart) { return; }
     mouseDraw();
 }
 
@@ -279,7 +303,7 @@ void mouseReleased() {
     stampButton.mouseReleased();
   }
 
-  // Handle single click (draw point if not dragged)
+  // Handle single click
   if (!isDragging && !(isPanelOpen && mouseY < canvasStart) && selectedButton != 13) {
     paintPG.beginDraw();
     paintPG.strokeWeight(currentStrokeSize);
@@ -293,14 +317,16 @@ void mouseReleased() {
   isTogglePanelButtonBeingPressed = false;
 }
 void mouseDraw() {
+  // stamp is selected
   if(selectedButton == 13) {
     paintPG.beginDraw();
-    paintPG.image(stampImg, mouseX- 50, mouseY - 30, 100, 73);
+    paintPG.image(stampImg, mouseX - currentStampSize/2, mouseY - currentStampSize / 300.0 * 109.0, currentStampSize, currentStampSize / 150.0 * 109.0);
     paintPG.endDraw();
   } else {
     PVector current = new PVector(mouseX, mouseY);
   
     if (previousSmoothed == null) {
+      //println("clicked");
       previousSmoothed = current.copy();
       return;
     }
