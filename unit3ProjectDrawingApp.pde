@@ -13,6 +13,7 @@ PGraphics panelPG;
 PGraphics paintPG;
 PGraphics strokeSizeIndicatorPG;
 PGraphics stampSizeIndicatorPG;
+PGraphics colorPickerPG;
 
 int canvasStart = 190;
 boolean isPanelOpen = true;
@@ -55,8 +56,9 @@ int MIN_STAMP_SIZE = 60;
 int MAX_STAMP_SIZE = 200;
 float currentStampSize = 100;
 
-RectButton colorPickerButton;
-PImage colorPickerButtonImg;
+CircleButton colorPickerButton;
+PImage colorPickerImg;
+boolean isColorPickerOpen = false;
 
 
 void setup() {
@@ -67,6 +69,7 @@ void setup() {
   arrowUpImg = loadImage("arrow up.png");
   eraserImg = loadImage("eraser.png");
   stampImg = loadImage("lebron_stamp.png");
+  colorPickerImg = loadImage("color_picker.png");
   
   font1 = createFont("Arial Bold", 35);
   
@@ -86,16 +89,18 @@ void setup() {
   strokeSizeIndicatorPG = createGraphics(MAX_STROKE_SIZE + 2, MAX_STROKE_SIZE + 2);
   stampSizeIndicatorPG = createGraphics(MAX_STAMP_SIZE, MAX_STAMP_SIZE);
   
+  colorPickerPG = createGraphics(600, 600);
+  
   // create color buttons
   colorButtons = new CircleButton[12];
-  int currentX = 75;
+  int currentX = 70;
   int currentY = 35;
   for(int i = 0; i < colorButtons.length; i++) {
     colorButtons[i] = new CircleButton(panelPG, currentX, currentY, 30, lerpColor(color(#f6ff00), color(#f21800), map(i, 0, colorButtons.length - 1, 0, 1)), color(0), color(100), color(100), 3);
     colorButtons[i].setButtonNum(i);
     currentX += 40;
     if((i + 1) % 4 == 0) {
-      currentX = 75;
+      currentX = 70;
       currentY += 40;
     }
   }
@@ -109,14 +114,14 @@ void setup() {
   }
   
   // create eraser button
-  eraserButton = new RectButton(panelPG, 285, 75, 60, 60, color(255), color(0), color(100), color(200), 4, 6);
+  eraserButton = new RectButton(panelPG, 435, 75, 60, 60, color(255), color(0), color(100), color(200), 4, 6);
   eraserButton.setOnClick(() -> {
     currentStrokeColor = color(255);
     selectButton(12);
   });
   
   // create stroke size slider
-  sizeSlider = new Slider(panelPG, 360, 75, 200, 8, color(0), 20, 3, color(0), color(100));
+  sizeSlider = new Slider(panelPG, 505, 75, 200, 8, color(0), 20, 3, color(0), color(100));
   sizeSlider.setOnSliderValueChanged(() -> {
     currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
     currentStampSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STAMP_SIZE, MAX_STAMP_SIZE);
@@ -125,27 +130,32 @@ void setup() {
   currentStrokeSize = map(sizeSlider.getSliderValue(), 0, 1, MIN_STROKE_SIZE, MAX_STROKE_SIZE);
   
   // Create stabilization slider
-  stabilizationSlider = new Slider(panelPG, 595, 75, 200, 8, color(0), 20, 3, color(0), color(100));
+  stabilizationSlider = new Slider(panelPG, 740, 75, 200, 8, color(0), 20, 3, color(0), color(100));
   stabilizationSlider.setOnSliderValueChanged(() -> {
     smoothingFactor = map(stabilizationSlider.getSliderValue(), 0, 1, 0.5, 0.92);
   });
   smoothingFactor = map(stabilizationSlider.getSliderValue(), 0, 1, 0.5, 0.92);
   
   // create stamp button
-  stampButton = new RectButton(panelPG, 870, 75, 100, 72, color(255), color(0), color(100), color(200), 4, 6);
+  stampButton = new RectButton(panelPG, 1015, 75, 100, 72, color(255), color(0), color(100), color(200), 4, 6);
   stampButton.setOnClick(() -> {
     selectButton(13);
   });
   
   // create colour picker button
+  colorPickerButton = new CircleButton(panelPG, 305, 75, 90, color(0, 0, 0, 0), color(0), color(100), color(200, 200, 200, 50), 4);
+  colorPickerButton.setOnClick(() -> {
+    isColorPickerOpen = !isColorPickerOpen;
+  });
 }
 
 void draw() {
-  //println(frameRate);
+  println(frameRate);
   
   background(255);
   
   // user drawing pg
+  imageMode(CORNER);
   image(paintPG, 0, 0);
   
   panelPG.beginDraw();
@@ -183,7 +193,7 @@ void draw() {
   eraserButton.draw();
   panelPG.beginDraw();
   panelPG.imageMode(CENTER);
-  panelPG.image(eraserImg, 285, 75, 44, 44);
+  panelPG.image(eraserImg, 435, 75, 44, 44);
   panelPG.endDraw();
   
   // draw size slider
@@ -191,7 +201,7 @@ void draw() {
   panelPG.beginDraw();
   panelPG.textFont(font1);
   panelPG.textSize(25);
-  panelPG.text("STROKE SIZE", 375, 115);
+  panelPG.text("STROKE SIZE", 520, 115);
   panelPG.endDraw();
   
   // draw stabilization slider
@@ -199,7 +209,7 @@ void draw() {
   panelPG.beginDraw();
   panelPG.textFont(font1);
   panelPG.textSize(25);
-  panelPG.text("STABILIZATION", 602, 115);
+  panelPG.text("STABILIZATION", 747, 115);
   panelPG.endDraw();
   
   // draw size indicators
@@ -230,11 +240,48 @@ void draw() {
   stampButton.draw();
   panelPG.beginDraw();
   panelPG.imageMode(CENTER);
-  panelPG.image(stampImg, 870, 75, 100, 72);
+  panelPG.image(stampImg, 1015, 75, 100, 72);
   panelPG.endDraw();
   
+  // draw color picker button + image
+  panelPG.beginDraw();
+  panelPG.image(colorPickerImg, 305+3, 75+3.5, 90 * 1.1, 90 * 1.1);
+  colorPickerButton.draw();
+  
+  // draw the panel pg
   panelY = lerp(panelY, targetPanelY, deltaTime * panelSpeed);
+  imageMode(CORNER);
   image(panelPG, 0, panelY);
+  
+  if(isColorPickerOpen) {
+    colorPickerPG.beginDraw();
+    colorPickerPG.rectMode(CENTER);
+    colorPickerPG.fill(#ffc94d);
+    colorPickerPG.stroke(0);
+    colorPickerPG.strokeWeight(8);
+    colorPickerPG.rect(300, 300, 600, 600, 6);
+    
+    colorPickerPG.stroke(0);
+    colorPickerPG.strokeWeight(4);
+    colorPickerPG.noFill();
+    colorPickerPG.imageMode(CENTER);
+    colorPickerPG.image(colorPickerImg, 300 + 24, 300 +22, 500 * 1.1, 500 * 1.1);
+    
+    colorPickerPG.noStroke();
+    colorPickerPG.fill(0, 0, 0, 0);
+    colorPickerPG.circle(300, 300, 500);
+    
+    colorPickerPG.stroke(0);
+    colorPickerPG.strokeWeight(4);
+    colorPickerPG.circle(300, 300, 500);
+    
+    colorPickerPG.endDraw();
+    
+    imageMode(CENTER);
+    image(colorPickerPG, width/2, height/2);
+  }
+  
+  
   
 } 
 boolean isHoveringOverTogglePanelButton() { return mouseX < width/2 + 40 + 2 && mouseX > width/2 - 40 - 2 && mouseY < canvasStart -17 + panelY + 16.5 + 2 && mouseY > canvasStart -17 + panelY - 16.5 - 2; }
@@ -270,6 +317,7 @@ void mousePressed() {
     }
     eraserButton.mousePressed();
     stampButton.mousePressed();
+    colorPickerButton.mousePressed();
   }
 
   if (isPanelOpen && mouseY < canvasStart) { return; }
@@ -301,10 +349,11 @@ void mouseReleased() {
     sizeSlider.mouseReleased();
     stabilizationSlider.mouseReleased();
     stampButton.mouseReleased();
+    colorPickerButton.mouseReleased();
   }
 
   // Handle single click
-  if (!isDragging && !(isPanelOpen && mouseY < canvasStart) && selectedButton != 13) {
+  if (!isDragging && !(isPanelOpen && mouseY < canvasStart) && selectedButton != 13 && !isColorPickerOpen) {
     paintPG.beginDraw();
     paintPG.strokeWeight(currentStrokeSize);
     paintPG.stroke(currentStrokeColor);
@@ -317,6 +366,8 @@ void mouseReleased() {
   isTogglePanelButtonBeingPressed = false;
 }
 void mouseDraw() {
+  if(isColorPickerOpen) { return; }
+  
   // stamp is selected
   if(selectedButton == 13) {
     paintPG.beginDraw();
