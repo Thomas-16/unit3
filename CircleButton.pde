@@ -33,7 +33,10 @@ class CircleButton {
     pGraphics.beginDraw();
     pGraphics.stroke(currentOutlineColor);
     pGraphics.strokeWeight(outlineWidth);
-    pGraphics.fill(currentButtonColor);
+    if(alpha(currentButtonColor) == 0)
+      pGraphics.noFill();
+    else
+      pGraphics.fill(currentButtonColor);
     pGraphics.circle(x, y, diameter);
     pGraphics.endDraw();
   }
