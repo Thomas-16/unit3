@@ -28,7 +28,7 @@ class CircleButton {
   
   public void draw() {
     color currentOutlineColor = isHoveredOver() ? hoveringOutlineColor : outlineColor;
-    color currentButtonColor = isBeingPressed ? clickingButtonColor : buttonColor;
+    color currentButtonColor = isBeingPressed ? lerpColor(clickingButtonColor, buttonColor, 0.4) : buttonColor;
     
     pGraphics.beginDraw();
     pGraphics.stroke(currentOutlineColor);
@@ -39,6 +39,9 @@ class CircleButton {
       pGraphics.fill(currentButtonColor);
     pGraphics.circle(x, y, diameter);
     pGraphics.endDraw();
+  }
+  public void setButtonColor(color buttonColor) {
+    this.buttonColor = buttonColor;
   }
   
   public void setOutlineColor(color outlineColor) {
