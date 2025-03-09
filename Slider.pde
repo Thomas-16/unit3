@@ -34,6 +34,9 @@ class Slider {
   public float getSliderValue() {
     return map(sliderX, leftX, leftX + sliderLength, 0, 1);
   }
+  public void setSliderValue(float value) {
+    sliderX = map(value, 0, 1, leftX, leftX + sliderLength);
+  }
   
   public void draw() {
     pGraphics.beginDraw();
