@@ -7,6 +7,8 @@
 // TODOS:
 // SHAPE TOOLS (LINE, RECTANGLE, CIRCLE, ELLIPSE)
 
+boolean fpsDebug = false;
+
 PGraphics panelPG;
 PGraphics paintPG;
 PGraphics strokeSizeIndicatorPG;
@@ -223,7 +225,7 @@ void setup() {
 }
 
 void draw() {
-  //println(frameRate);
+  println(frameRate);
   
   background(255);
   
@@ -333,6 +335,14 @@ void draw() {
   panelPG.beginDraw();
   panelPG.image(colorPickerImg, 305+3, 75+3.5, 90 * 1.1, 90 * 1.1);
   colorPickerButton.draw();
+  
+  if(fpsDebug) {
+    panelPG.beginDraw();
+    panelPG.textFont(font1);
+    panelPG.textSize(15);
+    panelPG.text(frameRate, 747, 20);
+    panelPG.endDraw();
+  }
   
   // draw the panel pg
   panelY = lerp(panelY, targetPanelY, deltaTime * panelSpeed);
