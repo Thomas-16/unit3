@@ -5,9 +5,7 @@
 
 
 // TODOS:
-// COLOUR PICKER TOOL
 // SHAPE TOOLS (LINE, RECTANGLE, CIRCLE, ELLIPSE)
-// NEW, SAVE, LOAD BUTTONS
 
 PGraphics panelPG;
 PGraphics paintPG;
@@ -52,13 +50,25 @@ Slider stabilizationSlider;
 
 RectButton stampButton;
 PImage stampImg;
-int MIN_STAMP_SIZE = 60;
+int MIN_STAMP_SIZE = 80;
 int MAX_STAMP_SIZE = 200;
 float currentStampSize = 100;
 
 CircleButton colorPickerButton;
 PImage colorPickerImg;
 boolean isColorPickerOpen = false;
+Slider brightnessSlider;
+int colorPickerX = 700;
+int colorPickerY = 400;
+PVector[] colorPointsOnCP;
+float[] brightnessSliderValuesCP;
+PGraphics colorPickerPGONLYWHEEL;
+RectButton closeColorPickerButton;
+PImage closeIconImg;
+
+RectButton newButton;
+RectButton loadButton;
+RectButton saveButton;
 
 
 void setup() {
@@ -70,6 +80,7 @@ void setup() {
   eraserImg = loadImage("eraser.png");
   stampImg = loadImage("lebron_stamp.png");
   colorPickerImg = loadImage("color_picker.png");
+  closeIconImg = loadImage("close_icon.png");
   
   font1 = createFont("Arial Bold", 35);
   
@@ -89,7 +100,16 @@ void setup() {
   strokeSizeIndicatorPG = createGraphics(MAX_STROKE_SIZE + 2, MAX_STROKE_SIZE + 2);
   stampSizeIndicatorPG = createGraphics(MAX_STAMP_SIZE, MAX_STAMP_SIZE);
   
-  colorPickerPG = createGraphics(600, 600);
+  colorPickerPG = createGraphics(1400, 900);
+  colorPickerPGONLYWHEEL = createGraphics(1400, 900);
+  
+  colorPickerPGONLYWHEEL.beginDraw();
+  colorPickerPGONLYWHEEL.stroke(0);
+  colorPickerPGONLYWHEEL.strokeWeight(4);
+  colorPickerPGONLYWHEEL.noFill();
+  colorPickerPGONLYWHEEL.imageMode(CENTER);
+  colorPickerPGONLYWHEEL.image(colorPickerImg, 700 + 24, 400 +22, 500 * 1.1, 500 * 1.1);
+  colorPickerPGONLYWHEEL.endDraw();
   
   // create color buttons
   colorButtons = new CircleButton[12];
@@ -111,6 +131,26 @@ void setup() {
       currentStrokeColor = button.getButtonColor();
       selectButton(button.getButtonNum());
     });
+  }
+  
+  colorPointsOnCP = new PVector[12];
+  colorPointsOnCP[0] = new PVector(777.3191, 164.36093);
+  colorPointsOnCP[1] = new PVector(724.67694, 153.23079);
+  colorPointsOnCP[2] = new PVector(691.8465, 152.13408);
+  colorPointsOnCP[3] = new PVector(657.08954, 155.74052);
+  colorPointsOnCP[4] = new PVector(550.63495, 202.02504);
+  colorPointsOnCP[5] = new PVector(518.3527, 237.15607);
+  colorPointsOnCP[6] = new PVector(497.41486, 260.9501);
+  colorPointsOnCP[7] = new PVector(497.41486, 285.9501);
+  colorPointsOnCP[8] = new PVector(480.2288, 320.0184);
+  colorPointsOnCP[9] = new PVector(470.3307, 335.78577);
+  colorPointsOnCP[10] = new PVector(465.4604, 350.7756);
+  colorPointsOnCP[11] = new PVector(455.90802, 397.7974);
+  brightnessSliderValuesCP = new float[12];
+    
+  for(int i = 0; i < 12; i++) {
+    colorButtons[i].setButtonColor(colorPickerPGONLYWHEEL.get(int(colorPointsOnCP[i].x), int(colorPointsOnCP[i].y)));
+    brightnessSliderValuesCP[i] = 0f;
   }
   
   // create eraser button
@@ -145,12 +185,45 @@ void setup() {
   // create colour picker button
   colorPickerButton = new CircleButton(panelPG, 305, 75, 90, color(0, 0, 0, 0), color(0), color(100), color(200, 200, 200, 50), 4);
   colorPickerButton.setOnClick(() -> {
+    if(!isColorPickerOpen && selectedButton > 11) {
+      selectButton(0);
+    }
     isColorPickerOpen = !isColorPickerOpen;
   });
+  
+  // create color picker brightness slider
+  brightnessSlider = new Slider(colorPickerPG, 700-200, 720, 400, 10, color(0), 23, 6, color(0), color(100));
+  brightnessSlider.setSliderValue(0);
+  brightnessSlider.setOnSliderValueChanged(() -> {
+    updateSelectedColorWithPicker();
+  });
+  
+  // close color picker button
+  closeColorPickerButton = new RectButton(colorPickerPG, 950, 150, 45, 45, color(255), color(0), color(100), color(200), 4, 6);
+  closeColorPickerButton.setOnClick(() -> {
+    isColorPickerOpen = false;
+  });
+  
+  // create new, save, and load buttons
+  newButton = new RectButton(panelPG, 1300, 75-45, 85, 38, color(255), color(0), color(100), color(200), 3, 4);
+  newButton.setOnClick(() -> {
+    paintPG.beginDraw();
+    paintPG.clear();
+    paintPG.endDraw();
+  });
+  loadButton = new RectButton(panelPG, 1300, 75, 85, 38, color(255), color(0), color(100), color(200), 3, 4);
+  loadButton.setOnClick(() -> {
+    selectInput("Pick an image to load", "openImage");
+  });
+  saveButton = new RectButton(panelPG, 1300, 75+45, 85, 38, color(255), color(0), color(100), color(200), 3, 4);
+  saveButton.setOnClick(() -> {
+    selectInput("Choose a name for the image file", "saveImage");
+  });
+  
 }
 
 void draw() {
-  println(frameRate);
+  //println(frameRate);
   
   background(255);
   
@@ -201,6 +274,7 @@ void draw() {
   panelPG.beginDraw();
   panelPG.textFont(font1);
   panelPG.textSize(25);
+  panelPG.textAlign(LEFT);
   panelPG.text("STROKE SIZE", 520, 115);
   panelPG.endDraw();
   
@@ -210,6 +284,18 @@ void draw() {
   panelPG.textFont(font1);
   panelPG.textSize(25);
   panelPG.text("STABILIZATION", 747, 115);
+  panelPG.endDraw();
+  
+  // draw new, load, save buttons
+  newButton.draw();
+  loadButton.draw();
+  saveButton.draw();
+  panelPG.beginDraw();
+  panelPG.textAlign(CENTER);
+  panelPG.fill(0);
+  panelPG.text("NEW", 1300, 75-45+10);
+  panelPG.text("LOAD", 1300, 75+10);
+  panelPG.text("SAVE", 1300, 75+45+10);
   panelPG.endDraw();
   
   // draw size indicators
@@ -224,7 +310,7 @@ void draw() {
       stampSizeIndicatorPG.endDraw();
       image(stampSizeIndicatorPG, width/2 - stampSizeIndicatorPG.width/2, height/2 - stampSizeIndicatorPG.height/2);
     } else {
-      strokeSizeIndicatorPG.beginDraw();
+      strokeSizeIndicatorPG.beginDraw(); 
       strokeSizeIndicatorPG.clear();
       strokeSizeIndicatorPG.stroke(0);
       strokeSizeIndicatorPG.strokeWeight(selectedButton == 12 ? 1 : 0);
@@ -240,7 +326,7 @@ void draw() {
   stampButton.draw();
   panelPG.beginDraw();
   panelPG.imageMode(CENTER);
-  panelPG.image(stampImg, 1015, 75, 100, 72);
+  panelPG.image(stampImg, 1015, 75, 94, 64);
   panelPG.endDraw();
   
   // draw color picker button + image
@@ -253,40 +339,89 @@ void draw() {
   imageMode(CORNER);
   image(panelPG, 0, panelY);
   
+  // draw color picker pg
   if(isColorPickerOpen) {
+    // box
     colorPickerPG.beginDraw();
+    colorPickerPG.clear();
     colorPickerPG.rectMode(CENTER);
     colorPickerPG.fill(#ffc94d);
     colorPickerPG.stroke(0);
     colorPickerPG.strokeWeight(8);
-    colorPickerPG.rect(300, 300, 600, 600, 6);
+    colorPickerPG.rect(700, 450, 600, 700, 6);
     
+    // color wheel image
     colorPickerPG.stroke(0);
     colorPickerPG.strokeWeight(4);
     colorPickerPG.noFill();
     colorPickerPG.imageMode(CENTER);
-    colorPickerPG.image(colorPickerImg, 300 + 24, 300 +22, 500 * 1.1, 500 * 1.1);
+    colorPickerPG.image(colorPickerImg, 700 + 24, 400 +22, 500 * 1.1, 500 * 1.1);
     
+    // black overlay
     colorPickerPG.noStroke();
-    colorPickerPG.fill(0, 0, 0, 0);
-    colorPickerPG.circle(300, 300, 500);
+    colorPickerPG.fill(0, 0, 0, map(brightnessSlider.getSliderValue(), 0, 1, 0, 255));
+    colorPickerPG.circle(700, 400, 500);
+    
+    // color selector
+    colorPickerPG.stroke(map(brightnessSlider.getSliderValue(), 0, 1, 0, 255));
+    colorPickerPG.strokeWeight(2);
+    
+    PVector point = colorPointsOnCP[selectedButton];
+    colorPickerPG.line(point.x - 6, point.y, point.x + 6, point.y);
+    colorPickerPG.line(point.x, point.y - 6, point.x, point.y + 6);
     
     colorPickerPG.stroke(0);
     colorPickerPG.strokeWeight(4);
-    colorPickerPG.circle(300, 300, 500);
+    colorPickerPG.noFill();
+    colorPickerPG.circle(colorPickerX, colorPickerY, 500);
+    
+    colorPickerPG.textAlign(CENTER);
+    colorPickerPG.textFont(font1);
+    colorPickerPG.textSize(30);
+    colorPickerPG.fill(0);
+    colorPickerPG.text("BRIGHTNESS", 700, 765);
     
     colorPickerPG.endDraw();
     
-    imageMode(CENTER);
-    image(colorPickerPG, width/2, height/2);
+    // draw close color picker button and image
+    closeColorPickerButton.draw();
+    colorPickerPG.beginDraw();
+    colorPickerPG.imageMode(CENTER);
+    colorPickerPG.image(closeIconImg, 950, 150, 40, 40);
+    colorPickerPG.endDraw();
+    
+    brightnessSlider.draw();
+    
+    imageMode(CORNER);
+    image(colorPickerPG, 0, 0);
   }
   
   
-  
 } 
+
+void controlColorPicker() {
+  colorPointsOnCP[selectedButton].x = mouseX;
+  colorPointsOnCP[selectedButton].y = mouseY;
+  colorPointsOnCP[selectedButton] = clampToCircle(colorPointsOnCP[selectedButton], new PVector(colorPickerX, colorPickerY), 248);
+  
+  updateSelectedColorWithPicker();
+}
+void updateSelectedColorWithPicker() {
+  color targetColor = colorPickerPGONLYWHEEL.get(int(colorPointsOnCP[selectedButton].x), int(colorPointsOnCP[selectedButton].y));
+  color adjustedTargetColor = lerpColor(targetColor, color(0), brightnessSlider.getSliderValue());
+  colorButtons[selectedButton].setButtonColor(adjustedTargetColor);
+  currentStrokeColor = adjustedTargetColor;
+  brightnessSliderValuesCP[selectedButton] = brightnessSlider.getSliderValue();
+  brightnessSlider.setCircleOutlineColor(adjustedTargetColor);
+  brightnessSlider.setCircleHoveringOutlineColor(adjustedTargetColor);
+}
+
+
 boolean isHoveringOverTogglePanelButton() { return mouseX < width/2 + 40 + 2 && mouseX > width/2 - 40 - 2 && mouseY < canvasStart -17 + panelY + 16.5 + 2 && mouseY > canvasStart -17 + panelY - 16.5 - 2; }
 
 void selectButton(int buttonNum) {
+  if(isColorPickerOpen && buttonNum > 11) { return; }
+  
   if(selectedButton <= 11) {
     colorButtons[selectedButton].setOutlineColor(color(0));
   } else if(selectedButton == 12) {
@@ -303,6 +438,9 @@ void selectButton(int buttonNum) {
   } else if(selectedButton == 13) {
     stampButton.setOutlineColor(selectedButtonOutlineColor);
   }
+  
+  if(selectedButton <= 11)
+    brightnessSlider.setSliderValue(brightnessSliderValuesCP[selectedButton]);
 }
 void mousePressed() {
   isDragging = false;
@@ -318,6 +456,14 @@ void mousePressed() {
     eraserButton.mousePressed();
     stampButton.mousePressed();
     colorPickerButton.mousePressed();
+    newButton.mousePressed();
+    loadButton.mousePressed();
+    saveButton.mousePressed();
+  }
+  if(isColorPickerOpen) {
+    closeColorPickerButton.mousePressed();
+    if(sqrMagnitude(colorPickerX, colorPickerY, mouseX, mouseY) <= sq(500 / 2))
+      controlColorPicker();
   }
 
   if (isPanelOpen && mouseY < canvasStart) { return; }
@@ -331,6 +477,12 @@ void mouseDragged() {
   if (isPanelOpen) {
     sizeSlider.mouseDragged();
     stabilizationSlider.mouseDragged();
+  }
+  if(isColorPickerOpen) {
+    brightnessSlider.mouseDragged();
+    if(sqrMagnitude(colorPickerX, colorPickerY, mouseX, mouseY) <= sq((500 / 2) + 60)) {
+      controlColorPicker();
+    }
   }
   
   if(isHoveringOverTogglePanelButton())
@@ -350,6 +502,13 @@ void mouseReleased() {
     stabilizationSlider.mouseReleased();
     stampButton.mouseReleased();
     colorPickerButton.mouseReleased();
+    newButton.mouseReleased();
+    loadButton.mouseReleased();
+    saveButton.mouseReleased();
+  }
+  if(isColorPickerOpen) {
+    closeColorPickerButton.mouseReleased();
+    brightnessSlider.mouseReleased();
   }
 
   // Handle single click
@@ -361,7 +520,7 @@ void mouseReleased() {
     paintPG.endDraw();
   }
 
-  if (isTogglePanelButtonBeingPressed) togglePanel();
+  if (isTogglePanelButtonBeingPressed && !isColorPickerOpen) togglePanel();
   
   isTogglePanelButtonBeingPressed = false;
 }
@@ -406,7 +565,36 @@ void togglePanel() {
     }
     isPanelOpen = !isPanelOpen;
 }
+void saveImage(File f) {
+  if(f != null) {
+    PImage canvas = paintPG.get(1, 1, width, height);
+    canvas.save(f.getAbsolutePath() + ".png");
+  }
+}
+void openImage(File f) {
+  if(f != null) {
+    PImage img = loadImage(f.getPath());
+    paintPG.beginDraw();
+    if(img.width >= img.height) {
+      paintPG.image(img, 0, 0, paintPG.width, img.height / (img.width/paintPG.width));
+    } else {
+      paintPG.image(img, 0, 0, img.width / (img.height/paintPG.height), paintPG.height);
+    }
+    paintPG.endDraw();
+  }
+}
 
+PVector clampToCircle(PVector point, PVector center, float radius) {
+  PVector dir = PVector.sub(point, center); // vector from center to point
+  float dist = dir.mag(); 
+  if (dist > radius) {
+    dir.normalize(); 
+    dir.mult(radius); // set the vector magnitude to the radius
+    return PVector.add(center, dir);
+  } else {
+    return point;
+  }
+}
 public float sqrMagnitude(int x1, int y1, int x2, int y2) {
   return sq(x1 - x2) + sq(y1 - y2);
 }
